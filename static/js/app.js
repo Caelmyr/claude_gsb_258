@@ -7,6 +7,7 @@
     { name: "detection", ico: "🎯", title: "目标检测与标注" },
     { name: "segmentation", ico: "🧩", title: "图像分割" },
     { name: "style", ico: "🎨", title: "风格迁移" },
+    { name: "palette", ico: "🌈", title: "主色提取" },
     { name: "batch", ico: "📦", title: "批量处理" },
     { name: "compare", ico: "⚖️", title: "结果对比" },
     { name: "tuning", ico: "🎚️", title: "参数调优与预设" },

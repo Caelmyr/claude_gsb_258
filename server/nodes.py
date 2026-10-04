@@ -9,6 +9,7 @@ from .algorithms import detection as _detection
 from .algorithms import features as _features
 from .algorithms import filters as _filters
 from .algorithms import geometry as _geometry
+from .algorithms import palette as _palette
 from .algorithms import segmentation as _segmentation
 from .algorithms import style as _style
 
@@ -207,6 +208,13 @@ NODES["style_transfer"] = _node(
     [_select("style", "风格", list(_style.STYLES.keys())),
      _range("strength", "强度", 0, 100, 1, 100)],
     _style.apply, desc="风格化（模拟）")
+
+NODES["extract_palette"] = _node(
+    "extract_palette", "主色提取", "计算机视觉",
+    [_range("colors", "主色数量", 1, 16, 1, 6, "色彩单一时实际数量可能更少"),
+     _range("merge", "合并强度", 0, 100, 1, 50, "值越大越积极地合并相近颜色"),
+     _bool("ignore_background", "忽略大面积背景", True)],
+    _palette.extract, desc="提取主色色卡，输出色块映射图与占比")
 
 
 # ---------------------------------------------------------------------------

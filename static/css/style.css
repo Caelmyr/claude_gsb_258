@@ -229,3 +229,24 @@ input[type="color"] { width: 100%; height: 34px; border: 1px solid var(--border-
 
 .keypoint-stats { font-size: 12px; color: var(--text-dim); }
 .desc-preview { font-family: var(--mono); font-size: 11px; color: var(--text-faint); word-break: break-all; max-height: 90px; overflow: auto; background: var(--bg-soft); padding: 8px; border-radius: var(--radius-sm); }
+
+/* ---------- 主色提取色卡 ---------- */
+.palette-strip { margin-bottom: 14px; }
+.pal-bar { display: flex; width: 100%; height: 64px; border-radius: var(--radius-sm); overflow: hidden; border: 1px solid var(--border); }
+.pal-bar-seg { display: block; min-width: 2px; height: 100%; transition: flex-grow .15s; }
+.pal-bar-seg:hover { opacity: .82; }
+.pal-list { display: flex; flex-direction: column; gap: 6px; }
+.pal-item { display: flex; align-items: center; gap: 12px; background: var(--bg-soft); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 8px 12px; }
+.pal-swatch {
+  width: 40px; height: 40px; border-radius: 6px; flex: none; display: grid; place-items: end start;
+  border: 1px solid rgba(255,255,255,.12);
+}
+.pal-swatch span {
+  font-size: 10px; padding: 0 4px; margin: 3px; border-radius: 4px;
+  background: rgba(0,0,0,.45); color: #fff;
+}
+.pal-info { flex: 1; min-width: 0; }
+.pal-hex { font-size: 14px; font-weight: 650; }
+.pal-rgb { font-size: 11px; color: var(--text-faint); margin-top: 1px; }
+.pal-pct { min-width: 56px; text-align: right; color: var(--accent); font-weight: 600; }
+.pal-copy { flex: none; }

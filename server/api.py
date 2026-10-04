@@ -10,7 +10,7 @@ from flask import Blueprint, jsonify, request, send_file
 from PIL import Image, ImageChops
 
 from . import config, pipeline as pipeline_engine
-from .algorithms import detection, features, segmentation, style, util
+from .algorithms import detection, features, palette, segmentation, style, util
 from .batch import BatchManager, process_image
 from .cache import ResultCache, make_key
 from .history import HistoryManager
@@ -445,6 +445,61 @@ def run_style():
     if err:
         return err[0], err[1]
     return jsonify(res)
+
+
+# ---------------------------------------------------------------------------
+# 主色提取 / 色卡导出
+# ---------------------------------------------------------------------------
+@bp.post("/palette")
+def run_palette():
+    data = request.get_json(silent=True) or {}
+    params = {
+        "colors": data.get("colors", 6),
+        "merge": data.get("merge", 50),
+        "ignore_background": data.get("ignore_background", True),
+        "bg_threshold": data.get("bg_threshold", 0.25),
+        "bg_tolerance": data.get("bg_tolerance", 18),
+    }
+    res, err = _run_op(data.get("image_id"), "palette", params, palette.extract)
+    if err:
+        return err[0], err[1]
+    return jsonify(res)
+
+
+def _get_palette_entry(result_id):
+    """取调色板结果条目；不是调色板结果时返回 None。"""
+    entry = cache.get_entry(result_id)
+    if not entry or not isinstance(entry.get("meta"), dict) \
+            or "colors" not in entry["meta"]:
+        return None
+    return entry
+
+
+@bp.get("/palette/results/<result_id>/swatch")
+def palette_swatch(result_id):
+    """渲染并下载色卡 PNG。"""
+    entry = _get_palette_entry(result_id)
+    if not entry:
+        return jsonify({"error": "色卡结果不存在"}), 404
+    meta = entry["meta"]
+    img = palette.render_swatch(meta.get("colors", []), meta.get("background"))
+    buf = io.BytesIO()
+    img.save(buf, "PNG")
+    buf.seek(0)
+    return send_file(buf, mimetype="image/png", as_attachment=False)
+
+
+@bp.get("/palette/results/<result_id>/text")
+def palette_text(result_id):
+    """下载纯文本色卡（HEX / RGB / 占比）。"""
+    entry = _get_palette_entry(result_id)
+    if not entry:
+        return jsonify({"error": "色卡结果不存在"}), 404
+    text = palette.palette_text(entry["meta"])
+    resp = send_file(io.BytesIO(text.encode("utf-8")), mimetype="text/plain",
+                     as_attachment=True, download_name="palette.txt")
+    resp.headers["Content-Type"] = "text/plain; charset=utf-8"
+    return resp
 
 
 # ---------------------------------------------------------------------------
