@@ -14,7 +14,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from PIL import Image, ImageDraw, ImageFilter  # noqa: E402
 
 from server import config, pipeline as pipeline_engine  # noqa: E402
-from server.algorithms import detection, features, segmentation, style  # noqa: E402
+from server.algorithms import detection, features, palette, segmentation, style  # noqa: E402
 from server.batch import BatchManager, process_image  # noqa: E402
 from server.cache import ResultCache  # noqa: E402
 from server.history import HistoryManager  # noqa: E402
@@ -110,6 +110,31 @@ def main():
     print("\n== 图像分割 ==")
     r = segmentation.segment(work, {"method": "color", "colors": 5})
     print(f"  区域数: {r['region_count']}  覆盖率={r['coverage']}")
+
+    print("\n== 主色提取 ==")
+    # 白底主体图：应忽略白底，主色占比归一
+    product = Image.new("RGB", (400, 300), (245, 245, 245))
+    d = ImageDraw.Draw(product)
+    d.rectangle([120, 80, 220, 200], fill=(200, 30, 40))
+    d.ellipse([240, 100, 320, 190], fill=(30, 90, 180))
+    r = palette.extract_palette(product, {"colors": 5, "ignore_bg": True})
+    total = sum(p["share"] for p in r["palette"])
+    print(f"  白底产品图: {[(p['hex'], p['share']) for p in r['palette'][:2]]} 占比和={total:.3f} 背景={r['diagnostics']['background_hex']}")
+    assert r["diagnostics"]["background_ignored"], "应检测到白底背景"
+    assert abs(total - 1.0) < 0.01, "占比应归一"
+    # 色彩单一图：合并相近色后不应硬凑数量
+    r = palette.extract_palette(_gradient(), {"colors": 6, "merge_similar": True})
+    total = sum(p["share"] for p in r["palette"])
+    print(f"  渐变图: {len(r['palette'])} 色 占比和={total:.3f}（请求 6 色，允许更少）")
+    assert abs(total - 1.0) < 0.01
+    # 关闭合并：相近色应被拆开
+    r2 = palette.extract_palette(_gradient(), {"colors": 6, "merge_similar": False})
+    print(f"  渐变图(不合并): {len(r2['palette'])} 色")
+    assert len(r2["palette"]) >= len(r["palette"])
+    # 色卡图与文本导出
+    card = palette.render_palette_card(r["palette"], title="冒烟")
+    print(f"  色卡图: {card.size[0]}x{card.size[1]}  文本导出:\n" +
+          "\n".join("    " + ln for ln in palette.palette_to_text(r["palette"]).splitlines()[:3]))
 
     print("\n== 风格迁移 ==")
     for s in ("oil", "sketch", "cyber"):

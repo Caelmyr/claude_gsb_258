@@ -9,6 +9,7 @@ from .algorithms import detection as _detection
 from .algorithms import features as _features
 from .algorithms import filters as _filters
 from .algorithms import geometry as _geometry
+from .algorithms import palette as _palette
 from .algorithms import segmentation as _segmentation
 from .algorithms import style as _style
 
@@ -150,6 +151,14 @@ NODES["solarize"] = _node(
     "solarize", "曝光过度", "颜色",
     [_range("threshold", "阈值", 0, 255, 1, 128)],
     _color.solarize, desc="solarize 效果")
+
+NODES["palette_extract"] = _node(
+    "palette_extract", "主色提取", "颜色",
+    [_range("colors", "主色数量", 2, 12, 1, 6),
+     _bool("ignore_bg", "忽略背景色", True, "忽略边缘包围的大面积背景色"),
+     _bool("merge_similar", "合并相近色", True),
+     _range("merge_threshold", "合并阈值", 4, 60, 1, 12, "越大合并越激进")],
+    _palette.extract_palette, desc="提取主色并生成色卡图")
 
 NODES["resize"] = _node(
     "resize", "缩放", "几何",

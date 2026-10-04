@@ -10,7 +10,7 @@ from flask import Blueprint, jsonify, request, send_file
 from PIL import Image, ImageChops
 
 from . import config, pipeline as pipeline_engine
-from .algorithms import detection, features, segmentation, style, util
+from .algorithms import detection, features, palette as palette_algo, segmentation, style, util
 from .batch import BatchManager, process_image
 from .cache import ResultCache, make_key
 from .history import HistoryManager
@@ -445,6 +445,56 @@ def run_style():
     if err:
         return err[0], err[1]
     return jsonify(res)
+
+
+# ---------------------------------------------------------------------------
+# 主色提取（取色）
+# ---------------------------------------------------------------------------
+@bp.post("/palette")
+def run_palette():
+    data = request.get_json(silent=True) or {}
+    params = {
+        "colors": data.get("colors", 6),
+        "ignore_bg": data.get("ignore_bg", True),
+        "merge_similar": data.get("merge_similar", True),
+        "merge_threshold": data.get("merge_threshold", 12),
+    }
+    res, err = _run_op(data.get("image_id"), "palette", params, palette_algo.extract_palette)
+    if err:
+        return err[0], err[1]
+    res["file_url"] = f"/api/results/{res['result_id']}/file"
+    return jsonify(res)
+
+
+@bp.post("/palette/export")
+def export_palette():
+    """把色卡导出为文件（前端把最近一次提取结果回传，服务端渲染/排版）。
+
+    format: png（色卡图）/ txt（每行一条）/ css（CSS 变量）/ json。
+    """
+    data = request.get_json(silent=True) or {}
+    palette = data.get("palette") or []
+    if not palette:
+        return jsonify({"error": "缺少 palette 数据"}), 400
+    fmt = data.get("format", "png")
+    title = data.get("title") or "提取主色"
+
+    if fmt == "png":
+        card = palette_algo.render_palette_card(palette, title=title)
+        buf = io.BytesIO()
+        card.save(buf, "PNG", optimize=True)
+        buf.seek(0)
+        return send_file(buf, mimetype="image/png", as_attachment=True,
+                         download_name="palette.png")
+
+    text_fmt = {"txt": "list", "css": "css", "json": "json"}.get(fmt)
+    if not text_fmt:
+        return jsonify({"error": "不支持的导出格式"}), 400
+    text = palette_algo.palette_to_text(palette, data.get("diagnostics"), fmt=text_fmt)
+    buf = io.BytesIO(text.encode("utf-8"))
+    buf.seek(0)
+    return send_file(buf, mimetype="text/plain; charset=utf-8", as_attachment=True,
+                     download_name=f"palette.{fmt}")
 
 
 # ---------------------------------------------------------------------------

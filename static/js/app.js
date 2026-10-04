@@ -3,6 +3,7 @@
   const NAV = [
     { name: "upload", ico: "🖼️", title: "图像管理" },
     { name: "pipeline", ico: "🔗", title: "滤镜链编辑器" },
+    { name: "palette", ico: "🌈", title: "主色提取" },
     { name: "features", ico: "✨", title: "特征提取" },
     { name: "detection", ico: "🎯", title: "目标检测与标注" },
     { name: "segmentation", ico: "🧩", title: "图像分割" },
